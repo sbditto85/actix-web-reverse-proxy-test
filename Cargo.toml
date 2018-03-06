@@ -1,0 +1,12 @@
+[package]
+name = "async_reverse_proxy"
+version = "0.1.0"
+authors = ["Casey Allred <sbditto85@gmail.com>"]
+
+[dependencies]
+env_logger = "0.5.4"
+bytes = "0.4.6"
+actix = "0.5.1"
+actix-web = {version="0.4.3",features=["alpn"]}
+futures = "0.1.18"
+http = "0.1.5"
