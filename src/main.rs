@@ -26,17 +26,26 @@ fn index(_req: HttpRequest) -> &'static str {
 }
 
 fn async_forward(_req: HttpRequest) -> Box<Future<Item=HttpResponse, Error=AppError>> {
-    client::ClientRequest::get("http://www.liveviewtech.com/")
+    client::ClientRequest::get("https://cameras.liveviewtech.com/users/login") //https://www.rust-lang.org/en-US/  //http://liveviewtech.com/ //https://www.google.com/
         .finish().unwrap()
         .send()                         // <- connect to host and send request
         .map_err(apperror::AppError::from)    // <- convert SendRequestError to an Error
-        .and_then(|resp| {              // <- we received client response
-            httpcodes::HttpOk.build()
-            // read one chunk from client response and send this chunk to a server response
-            // .from_err() converts PayloadError to a Error
-                .body(Body::Streaming(Box::new(resp.from_err())))
-                .map_err(|e| e.into()) // HttpOk::build() mayb return HttpError, we need to convert it to a Error
-        })
+        .and_then(//|resp| {              // <- we received client response
+            |resp| resp.body()         // <- this is MessageBody type, resolves to complete body
+                .from_err()            // <- convet PayloadError to a Error
+                .and_then(|body| {     // <- we got complete body, now send as server response
+                    println!("{:?}", body);
+                    httpcodes::HttpOk.build()
+                        .body(body)
+                        .map_err(apperror::AppError::from)
+                }))
+            // httpcodes::HttpOk.build()
+            //     .content_type("text/html")
+            // // read one chunk from client response and send this chunk to a server response
+            // // .from_err() converts PayloadError to a Error
+            //     .body(Body::Streaming(Box::new(resp.from_err())))
+            //     .map_err(|e| e.into()) // HttpOk::build() mayb return HttpError, we need to convert it to a Error
+        //})
         .responder()
 }
 
@@ -49,7 +58,7 @@ fn main() {
         || Application::new()
             // enable logger
             .middleware(middleware::Logger::default())
-            .resource("/async", |r| r.route().f(async_forward))
+            .resource("/async", |r| r.route().a(async_forward))
             .resource("/index.html", |r| r.f(|_| "Hello world!"))
             .resource("/", |r| r.f(index)))
         .threads(4)
