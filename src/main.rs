@@ -32,7 +32,6 @@ fn async_forward(_req: HttpRequest) -> Box<Future<Item=HttpResponse, Error=AppEr
         .map_err(apperror::AppError::from)    // <- convert SendRequestError to an Error
         .and_then(|resp| {              // <- we received client response
             httpcodes::HttpOk.build()
-                .content_type("text/html")
             // read one chunk from client response and send this chunk to a server response
             // .from_err() converts PayloadError to a Error
                 .body(Body::Streaming(Box::new(resp.from_err())))
@@ -50,7 +49,7 @@ fn main() {
         || Application::new()
             // enable logger
             .middleware(middleware::Logger::default())
-            .resource("/async", |r| r.route().a(async_forward))
+            .resource("/async", |r| r.route().f(async_forward))
             .resource("/index.html", |r| r.f(|_| "Hello world!"))
             .resource("/", |r| r.f(index)))
         .threads(4)
