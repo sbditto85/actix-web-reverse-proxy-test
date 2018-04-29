@@ -11,6 +11,7 @@ use actix_web::*;
 use futures::Future;
 // use futures::stream::Stream;
 // use futures::IntoFuture;
+// use std::path::PathBuf;
 
 mod apperror;
 
@@ -20,11 +21,16 @@ fn index(_req: HttpRequest) -> &'static str {
     "Hello world!"
 }
 
-fn catchall(s: Path<String>) -> Box<Future<Item = HttpResponse, Error = AppError>> {
-    println!("s => {}", s.clone());
+fn catchall(req: HttpRequest) -> Box<Future<Item = HttpResponse, Error = AppError>> {
+    let s: String = if let Ok(s) = req.match_info().query("catchall") {
+        s
+    } else {
+        "blah".to_owned() //TODO: return an error instead
+    };
+    println!("s => {}", s);
     let base_url = "https://cameras.liveviewtech.com/".to_owned();
-    let full_url = format!("{}{}", base_url, s.into_inner());
-    client::ClientRequest::get(&full_url)
+    let full_url = format!("{}{}", base_url, s);
+    client::ClientRequestBuilder::from(&req).uri(&full_url)
         .finish().unwrap()
         .send()                         // <- connect to host and send request
         .map_err(apperror::AppError::from)    // <- convert SendRequestError to an Error
@@ -40,8 +46,8 @@ fn catchall(s: Path<String>) -> Box<Future<Item = HttpResponse, Error = AppError
         .responder()
 }
 
-fn async_forward(_req: HttpRequest) -> Box<Future<Item = HttpResponse, Error = AppError>> {
-    client::ClientRequest::get("https://cameras.liveviewtech.com/users/login") //https://www.rust-lang.org/en-US/  //http://liveviewtech.com/ //https://www.google.com/
+fn async_forward(req: HttpRequest) -> Box<Future<Item = HttpResponse, Error = AppError>> {
+    client::ClientRequestBuilder::from(&req).uri("https://cameras.liveviewtech.com/users/login")
         .finish().unwrap()
         .send()                         // <- connect to host and send request
         .map_err(apperror::AppError::from)    // <- convert SendRequestError to an Error
@@ -69,7 +75,7 @@ fn main() {
             .resource("/async", |r| r.route().a(async_forward))
             .resource("/index.html", |r| r.f(|_| "Hello world!"))
             .resource("/", |r| r.f(index))
-            .resource("/{catchall:.*}", |r| r.with(catchall))
+            .resource("/{catchall:.*}", |r| r.route().a(catchall))
     })
         .threads(4)
         .bind("127.0.0.1:8080")
