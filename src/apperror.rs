@@ -1,13 +1,14 @@
 // Stolen and modified from https://github.com/JustinRyanH/actix-oauth2/blob/experimental_redis/src/errors.rs
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 use http;
 
-use actix_web::{self, Body, HttpResponse, StatusCode};
 use actix_web::client::SendRequestError;
+use actix_web::http::StatusCode;
+use actix_web::{self, HttpResponse};
 
-pub type AppResult<T> = Result<T, AppError>;
+// pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -17,15 +18,15 @@ pub enum AppError {
     Lazy(String),
 }
 
-impl AppError {
-    pub fn lazy<S: Into<String>>(s: S) -> AppError {
-        AppError::Lazy(s.into())
-    }
-}
+// impl AppError {
+//     pub fn lazy<S: Into<String>>(s: S) -> AppError {
+//         AppError::Lazy(s.into())
+//     }
+// }
 
 impl actix_web::error::ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR, Body::Empty)
+        HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
 
