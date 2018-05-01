@@ -30,8 +30,12 @@ fn catchall(req: HttpRequest) -> Box<Future<Item = HttpResponse, Error = AppErro
     println!("s => {}", s);
     let base_url = "https://cameras.liveviewtech.com/".to_owned();
     let full_url = format!("{}{}", base_url, s);
-    client::ClientRequestBuilder::from(&req).uri(&full_url)
-        .finish().unwrap()
+    let mut client_req;
+    {
+        client_req = client::ClientRequestBuilder::from(&req);
+    }
+    client_req.uri(&full_url)
+        .streaming(req).unwrap() // TODO: actually handle this?
         .send()                         // <- connect to host and send request
         .map_err(apperror::AppError::from)    // <- convert SendRequestError to an Error
         .map(
@@ -47,8 +51,12 @@ fn catchall(req: HttpRequest) -> Box<Future<Item = HttpResponse, Error = AppErro
 }
 
 fn async_forward(req: HttpRequest) -> Box<Future<Item = HttpResponse, Error = AppError>> {
-    client::ClientRequestBuilder::from(&req).uri("https://cameras.liveviewtech.com/users/login")
-        .finish().unwrap()
+    let mut client_req;
+    {
+        client_req = client::ClientRequestBuilder::from(&req);
+    }
+    client_req.uri("https://cameras.liveviewtech.com/users/login")
+        .streaming(req).unwrap() // TODO: actually handle this?
         .send()                         // <- connect to host and send request
         .map_err(apperror::AppError::from)    // <- convert SendRequestError to an Error
         .map(
